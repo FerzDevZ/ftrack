@@ -1,0 +1,57 @@
+[package]
+name = "ftrack"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ferdinand <ferdinand@example.com>"]
+description = "Industrial-grade Web Archiver & Analyzer"
+
+[dependencies]
+# Async Runtime
+tokio = { version = "1.36", features = ["full"] }
+futures = "0.3.30"
+async-trait = "0.1.77"
+
+# CLI & Config
+clap = { version = "4.5.1", features = ["derive", "env"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8.10"
+
+# Networking
+reqwest = { version = "0.11", features = ["json", "cookies"] }
+url = { version = "2.5", features = ["serde"] }
+robots_txt = "0.3.0"
+
+# Parsing
+scraper = "0.18.1"
+lightningcss = { version = "1.0.0-alpha.54", features = ["visitor"] }
+
+# Logging & Observability
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+
+# Error Handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Utils
+bytes = "1.5.0"
+chrono = { version = "0.4.34", features = ["serde"] }
+sha2 = "0.10.8"
+walkdir = "2.4.0"
+regex = "1.10"
+
+# Storage (V2)
+rusqlite = { version = "0.31.0", features = ["bundled"] }
+tokio-rusqlite = "0.5.1"
+
+# TUI (V2)
+ratatui = "0.26.1"
+crossterm = { version = "0.27.0", features = ["event-stream"] }
+
+# SPA Support (V3)
+chromiumoxide = { version = "0.5", features = ["tokio"] }
+futures-util = "0.3"
+
+# Standard Archiving (Stage 4)
+uuid = { version = "1.0", features = ["v4"] }
