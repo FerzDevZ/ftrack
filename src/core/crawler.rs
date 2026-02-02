@@ -148,7 +148,8 @@ impl WebCrawler {
                             }
                             if let Some(tui_state) = &self.tui_state {
                                 let mut state = tui_state.lock().await;
-                                state.leaks_detected.push(leak);
+                                state.leaks_detected.push(leak.clone());
+                                state.add_log(format!("[ALERT] Found {}: {}", leak.kind, leak.value));
                             }
                         }
                     }
@@ -162,7 +163,8 @@ impl WebCrawler {
                             }
                             if let Some(tui_state) = &self.tui_state {
                                 let mut state = tui_state.lock().await;
-                                state.api_endpoints.push(endpoint);
+                                state.api_endpoints.push(endpoint.clone());
+                                state.add_log(format!("[API] Discovered: {}", endpoint.url));
                             }
                         }
                     }
@@ -188,6 +190,7 @@ impl WebCrawler {
                     if let Some(tui_state) = &self.tui_state {
                         let mut state = tui_state.lock().await;
                         state.visited_count += 1;
+                        state.add_log(format!("Saved: {}", local_path.display()));
                     }
                 }
                 Err(e) => {

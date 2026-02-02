@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  ftrack:
+    build: .
+    volumes:
+      - ./archive:/app/archive
+    environment:
+      - CHROME_BIN=/usr/bin/chromium
+    # Example usage: docker-compose run ftrack google.com

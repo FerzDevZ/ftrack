@@ -2,7 +2,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(name = "ftrack", author, version, about, long_about = None)]
 pub struct Args {
     /// Target URL to archive
     #[arg(required = true)]
@@ -39,4 +39,8 @@ pub struct Args {
     /// Log level (trace, debug, info, warn, error)
     #[arg(short, long, default_value = "info")]
     pub log_level: String,
+
+    /// Disable TUI dashboard and use standard logging
+    #[arg(long)]
+    pub no_tui: bool,
 }

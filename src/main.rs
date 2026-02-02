@@ -48,22 +48,24 @@ async fn main() -> anyhow::Result<()> {
         AppConfig::default()
     };
 
-    // 3. Initialize tracing (logging)
-    let log_level = match args.log_level.to_lowercase().as_str() {
-        "trace" => Level::TRACE,
-        "debug" => Level::DEBUG,
-        "info" => Level::INFO,
-        "warn" => Level::WARN,
-        "error" => Level::ERROR,
-        _ => Level::INFO,
-    };
+    // 3. Initialize tracing (logging) only if TUI is disabled
+    if args.no_tui {
+        let log_level = match args.log_level.to_lowercase().as_str() {
+            "trace" => Level::TRACE,
+            "debug" => Level::DEBUG,
+            "info" => Level::INFO,
+            "warn" => Level::WARN,
+            "error" => Level::ERROR,
+            _ => Level::INFO,
+        };
 
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(log_level)
-        .finish();
+        let subscriber = FmtSubscriber::builder()
+            .with_max_level(log_level)
+            .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+    }
 
     info!("Starting Web Archiver & Analyzer...");
 
@@ -136,8 +138,14 @@ async fn main() -> anyhow::Result<()> {
     queue.push(initial_asset).await;
 
     // V2: Initialize TUI State
-    let tui_state = Arc::new(tokio::sync::Mutex::new(cli::tui::TuiState::default()));
-    let tui_dashboard = cli::tui::TuiDashboard::new(tui_state.clone());
+    let mut tui_dashboard = None;
+    let mut tui_state = None;
+
+    if !args.no_tui {
+        let state = Arc::new(tokio::sync::Mutex::new(cli::tui::TuiState::default()));
+        tui_dashboard = Some(cli::tui::TuiDashboard::new(state.clone()));
+        tui_state = Some(state);
+    }
 
     // 6. Initialize and run crawler
     let crawler = WebCrawler::new(
@@ -154,7 +162,7 @@ async fn main() -> anyhow::Result<()> {
         metrics,
         storage,
         Some(db),
-        Some(tui_state),
+        tui_state,
         args.depth,
         config.crawler.user_agent,
     );
@@ -164,28 +172,39 @@ async fn main() -> anyhow::Result<()> {
         crawler.crawl().await
     });
 
-    let tui_handle = tokio::spawn(async move {
-        tui_dashboard.run().await
-    });
+    let mut tui_handle = None;
+    if let Some(dashboard) = tui_dashboard {
+        tui_handle = Some(tokio::spawn(async move {
+            dashboard.run().await
+        }));
+    }
 
     // Wait for either the crawler to finish or the user to exit via TUI
-    tokio::select! {
-        res = crawler_handle => {
-            if let Ok(Ok(())) = res {
-                info!("Crawler finished.");
+    if let Some(handle) = tui_handle {
+        tokio::select! {
+            res = crawler_handle => {
+                if let Ok(Ok(())) = res {
+                    info!("Crawler finished.");
+                }
             }
+            res = handle => {
+                if let Ok(Err(e)) = res {
+                    error!("TUI error: {}", e);
+                }
+            }
+            _ = async {
+                if let Some(h) = browser_handle {
+                    let _ = h.await;
+                }
+                futures::future::pending::<()>().await
+            } => {}
         }
-        res = tui_handle => {
-            if let Ok(Err(e)) = res {
-                error!("TUI error: {}", e);
-            }
+    } else {
+        match crawler_handle.await {
+            Ok(Ok(())) => info!("Crawler finished."),
+            Ok(Err(e)) => error!("Crawler error: {}", e),
+            Err(e) => error!("Join error: {}", e),
         }
-        _ = async {
-            if let Some(handle) = browser_handle {
-                let _ = handle.await;
-            }
-            futures::future::pending::<()>().await
-        } => {}
     }
 
     if let Some(bc) = browser_client {

@@ -1,48 +1,81 @@
-# Web Archiver & Analyzer
+# ftrack: Industrial Web Archiver & Analyzer
 
-Industrial-grade, modern, and modular CLI tool written in Rust for archiving and analyzing websites.
+<p align="center">
+  <img src="img/image.png" width="32%" />
+  <img src="img/image2.png" width="32%" />
+  <img src="img/image3.png" width="32%" />
+</p>
 
-## Features
-- **Modern Archiving:** Full support for HTML, CSS, JS, and static assets.
-- **SPA-Aware:** Optional headless rendering to capture DOM state of modern web apps.
-- **Passive Analysis:** Identifies tech stacks and discovers API endpoints without brute-forcing.
-- **High Performance:** Built on Tokio for asynchronous, non-blocking I/O.
-- **Ethical & Legal:** Respects `robots.txt` and implements per-domain rate limiting.
-- **Modular Design:** Highly extensible architecture with clear trait boundaries.
+ftrack adalah kakas (tool) baris perintah berbasis Rust yang dirancang untuk kearsipan web dan analisis intelijen teknis. Proyek ini menitikberatkan pada performa tinggi, modularitas, dan kepatuhan terhadap standar industri.
 
-## Architecture
-The project is organized into several key subsystems:
-- `core`: Orchestrates crawling, scheduling, and deduplication.
-- `net`: Handles HTTP requests, rate limiting, and robots.txt.
-- `parser`: Extracts links and assets from various content types.
-- `resolver`: Manages URL normalization and content rewriting for offline use.
-- `analyzer`: Detects technologies and collects site-wide metrics.
-- `storage`: Handles filesystem interaction and metadata persistence.
+## Fitur Utama
 
-## Usage
+- **Kearsipan Standar**: Implementasi penuh format WARC (ISO 28500) dan ekstraksi halaman statis (Monolith).
+- **Mesin Krawl**: Eksekusi asinkron menggunakan runtime Tokio dengan manajemen antrean prioritas.
+- **Rendering Dinamis**: Dukungan render sisi klien (SPA) melalui integrasi Chromium headless.
+- **Analisis OSINT**: 
+  - Pemindaian pasif untuk deteksi kebocoran kredensial (Secret Scanner).
+  - Pemetaan otomatis titik akhir (endpoint) API (REST, GraphQL, dll).
+- **Antarmuka TUI**: Dasbor interaktif untuk pemantauan metrik dan aktivitas mesin secara langsung.
+
+## Persyaratan Sistem
+
+- Rust Stable (1.75+)
+- libssl-dev / openssl
+- libsqlite3-dev / sqlite
+- Chromium (untuk fitur --spa)
+
+## Instalasi
+
+### Otomatisasi Shell
+Menjalankan skrip berikut akan mengonfigurasi dependensi dan mengompilasi biner:
 ```bash
-# Basic usage
-archiv https://example.com --output ./archive --depth 2
-
-# SPA rendering & API analysis
-archiv https://app.example.com --spa --analyze-api
+chmod +x install.sh
+./install.sh
 ```
 
-## Configuration
-Example `config.toml`:
-```toml
-[crawler]
-user_agent = "WebArchiverBot/1.0"
-max_depth = 3
-concurrent_requests = 5
-
-[analyzer]
-spa_mode = true
-detect_tech = true
+### Lingkungan Terisolasi (Docker)
+ftrack dapat dijalankan di dalam kontainer untuk menghindari polusi dependensi pada sistem host:
+```bash
+docker build -t ftrack .
+docker run -it -v $(pwd)/archive:/app/archive ftrack <URL>
 ```
 
-## Development
-This project requires the latest Rust stable.
+### Instalasi Manual
 ```bash
 cargo build --release
+cargo install --path .
 ```
+
+## Penggunaan
+
+Kearsipan dasar situs web:
+```bash
+./ftrack https://example.com
+```
+
+Analisis teknis mendalam dengan rendering SPA:
+```bash
+./ftrack https://target.site --spa --analyze-api
+```
+
+### Parameter Baris Perintah
+- `--output <DIR>`: Menentukan direktori keluaran.
+- `--depth <N>`: Menentukan kedalaman rekursi krawl.
+- `--warc`: Mengaktifkan output dalam format WARC.
+- `--monolith`: Menggabungkan seluruh aset ke dalam satu file HTML.
+- `--no-tui`: Menjalankan aplikasi tanpa antarmuka dasbor.
+
+## Struktur Kode
+
+- `src/core`: Logika inti krawler dan penjadwalan.
+- `src/analyzer`: Komponen analisis teknis dan intelijen.
+- `src/storage`: Implementasi berbagai lapisan persistensi data.
+- `src/cli`: Penanganan argumen dan antarmuka pengguna.
+
+## Legalitas
+
+Pengguna bertanggung jawab penuh atas penggunaan kakas ini. Pastikan Anda memiliki otoritas untuk melakukan pemindaian pada target dan patuhi kebijakan robots.txt yang berlaku.
+
+---
+Dikembangkan oleh Tim ftrack.
