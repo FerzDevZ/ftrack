@@ -1,0 +1,35 @@
+signatures:
+  - id: restful-path
+    name: RESTful API Path
+    pattern: '\"(?:https?://[^\\s\"''<>]+)?/api/v[0-9]+/[^\\s\"''<>]+\"'
+    severity: info
+    description: "Endpoint REST (Versioning v1/v2/dll) ditemukan."
+    kind: api
+
+  - id: graphql-pattern
+    name: GraphQL Endpoint
+    pattern: '(?i)\"(?:https?://[^\\s\"''<>]+)?/(graphql|gql|v1/graphql)\"'
+    severity: info
+    description: "Endpoint GraphQL terdeteksi."
+    kind: api
+
+  - id: json-rpc
+    name: JSON-RPC Endpoint
+    pattern: '(?i)\"(?:https?://[^\\s\"''<>]+)?/(rpc|jsonrpc|v1/rpc)\"'
+    severity: info
+    description: "Endpoint JSON-RPC terdeteksi."
+    kind: api
+
+  - id: firebase-gcp
+    name: Firebase/GCP API
+    pattern: '\"https?://[a-zA-Z0-9\-]+\.(firebaseio\.com|googleapis\.com|appspot\.com)/[^\\s\"''<>]+\"'
+    severity: info
+    description: "Integrasi Firebase atau Google Cloud API terdeteksi."
+    kind: api
+
+  - id: generic-api
+    name: Generic API Path
+    pattern: '\"(?:https?://[^\\s\"''<>]+)?/(?:api|v1|v2|v3|endpoints)/[^\\s\"''<>]+\"'
+    severity: info
+    description: "Pola API umum ditemukan (api/v1/...). "
+    kind: api

@@ -21,3 +21,4 @@ pub mod tech_detect;
 pub mod metrics;
 pub mod secret_scanner;
 pub mod api_discover;
+pub mod signatures;

@@ -40,6 +40,10 @@ impl RateLimiter {
 
         RateLimitGuard { _permit: permit }
     }
+
+    pub fn max_concurrent_requests(&self) -> usize {
+        self.max_concurrent
+    }
 }
 
 pub struct RateLimitGuard {

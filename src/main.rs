@@ -148,7 +148,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // 6. Initialize and run crawler
-    let crawler = WebCrawler::new(
+    let crawler = Arc::new(WebCrawler::new(
         client,
         queue,
         deduplicator,
@@ -165,7 +165,7 @@ async fn main() -> anyhow::Result<()> {
         tui_state,
         args.depth,
         config.crawler.user_agent,
-    );
+    ));
 
     // Run Crawler and TUI concurrently
     let crawler_handle = tokio::spawn(async move {

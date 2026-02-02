@@ -155,13 +155,13 @@ impl Database {
     pub async fn save_leak(&self, leak: crate::types::leak::Leak) -> Result<()> {
         let kind = leak.kind;
         let value = leak.value;
-        let url = leak.url;
+        let source_url = leak.source_url;
         let context = leak.context;
 
         self.conn.call(move |conn| {
             conn.execute(
                 "INSERT INTO leaks (kind, value, url, context) VALUES (?1, ?2, ?3, ?4)",
-                (kind, value, url, context),
+                (kind, value, source_url, context),
             )?;
             Ok(())
         }).await?;

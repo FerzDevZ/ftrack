@@ -4,6 +4,6 @@ use serde::{Serialize, Deserialize};
 pub struct Leak {
     pub kind: String,
     pub value: String,
-    pub url: String,
+    pub source_url: String,
     pub context: String,
 }
