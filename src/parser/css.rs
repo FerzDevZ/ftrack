@@ -48,3 +48,41 @@ impl<'i> Visitor<'i> for CssUrlVisitor {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base() -> Url {
+        Url::parse("https://example.com/css/site.css").expect("base URL parses")
+    }
+
+    #[test]
+    fn url_references_are_resolved_against_the_stylesheet() {
+        let css = r#"
+            @font-face { font-family: Inter; src: url("../fonts/inter.woff2"); }
+            .hero { background-image: url("/img/hero.jpg"); }
+        "#;
+
+        let assets = CssParser.extract_assets(css, &base()).expect("css parses");
+
+        let urls: Vec<&str> = assets.iter().map(|a| a.url.as_str()).collect();
+        assert!(urls.contains(&"https://example.com/fonts/inter.woff2"));
+        assert!(urls.contains(&"https://example.com/img/hero.jpg"));
+        assert!(assets.iter().all(|a| matches!(a.asset_type, AssetType::Other(ref kind) if kind == "css-asset")));
+    }
+
+    #[test]
+    fn a_stylesheet_contributes_no_navigation_links() {
+        let links = CssParser.extract_links(".a { color: red }", &base()).expect("css parses");
+
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn broken_css_does_not_abort_the_crawl() {
+        let assets = CssParser.extract_assets("{{ not css", &base()).expect("no error is returned");
+
+        assert!(assets.is_empty());
+    }
+}

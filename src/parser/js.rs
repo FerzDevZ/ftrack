@@ -10,14 +10,17 @@ pub struct JsParser;
 impl JsParser {
     #[allow(dead_code)]
     pub fn detect_spa_patterns(&self, content: &str) -> Vec<String> {
+        /* Bundles spell the framework the way its source does — `React`,
+           `Vue` — so matching is case-insensitive. */
+        let haystack = content.to_lowercase();
         let mut patterns = Vec::new();
-        if content.contains("react") || content.contains("_jsx") {
+        if haystack.contains("react") || haystack.contains("_jsx") {
             patterns.push("React".to_string());
         }
-        if content.contains("vue") {
+        if haystack.contains("vue") {
             patterns.push("Vue.js".to_string());
         }
-        if content.contains("next") {
+        if haystack.contains("next") {
             patterns.push("Next.js".to_string());
         }
         patterns
@@ -42,7 +45,8 @@ impl ContentParser for JsParser {
     fn extract_assets(&self, content: &str, base_url: &Url) -> Result<Vec<Asset>> {
         let mut assets = Vec::new();
         // Extract dynamically imported bundles/assets if possible via simple regex
-        let re = Regex::new(r#"(?:import|src|href)\s*[:=]\s*["']([^"']+\.(?:js|css|png|jpg|webp))["']"#).unwrap();
+        /* Covers `import("./chunk.js")` as well as `src="x.js"` and `href: "x.css"`. */
+        let re = Regex::new(r#"(?:import|src|href)\s*(?:[:=(]\s*)["']([^"']+\.(?:js|css|png|jpg|webp))["']"#).unwrap();
         
         for cap in re.captures_iter(content) {
             if let Ok(url) = base_url.join(&cap[1]) {
@@ -51,5 +55,67 @@ impl ContentParser for JsParser {
         }
         
         Ok(assets)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spa_markers_name_the_framework() {
+        let parser = JsParser;
+
+        assert_eq!(parser.detect_spa_patterns("var x = React.createElement"), vec!["React"]);
+        assert_eq!(parser.detect_spa_patterns("window.__NEXT_DATA__"), vec!["Next.js"]);
+        assert_eq!(parser.detect_spa_patterns("new Vue({ el: '#app' })"), vec!["Vue.js"]);
+        assert_eq!(parser.detect_spa_patterns("__NEXT_DATA__"), vec!["Next.js"]);
+        assert!(parser.detect_spa_patterns("console.log('plain')").is_empty());
+    }
+
+    #[test]
+    fn api_discovery_keeps_only_endpoint_like_urls() {
+        let parser = JsParser;
+        let bundle = r#"
+            fetch("/api/orders");
+            const client = createClient("https://api.example.com/graphql");
+            location.href = "https://example.com/pricing";
+        "#;
+
+        let endpoints = parser.discover_api_endpoints(bundle);
+
+        assert_eq!(
+            endpoints,
+            vec!["/api/orders", "https://api.example.com/graphql"]
+        );
+    }
+
+    #[test]
+    fn dynamically_imported_assets_are_found() {
+        let parser = JsParser;
+        let bundle = r#"
+            import("./chunk.abc123.js");
+            const img = document.createElement("img"); img.src = "hero.webp";
+            const link = { href: "theme.css" };
+        "#;
+
+        let assets = parser.extract_assets(bundle, &Url::parse("https://example.com/app.js").unwrap())
+            .expect("assets parse");
+
+        assert_eq!(assets.len(), 3);
+        assert_eq!(assets[0].url.as_str(), "https://example.com/chunk.abc123.js");
+        assert_eq!(assets[1].url.as_str(), "https://example.com/hero.webp");
+        assert_eq!(assets[2].url.as_str(), "https://example.com/theme.css");
+        assert!(assets.iter().all(|a| matches!(a.asset_type, AssetType::Other(_))));
+    }
+
+    #[test]
+    fn a_javascript_file_contributes_no_navigation_links() {
+        let parser = JsParser;
+        let links = parser
+            .extract_links("fetch('/api/orders')", &Url::parse("https://example.com/app.js").unwrap())
+            .expect("links parse");
+
+        assert!(links.is_empty());
     }
 }
